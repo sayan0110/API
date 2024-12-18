@@ -116,4 +116,91 @@ router.put("/:videoId", checkAuth, async (req, res) => {
     console.log(err);
   }
 });
+
+//delete video =======================================================>
+router.delete("/:videoId", checkAuth, async (req, res) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const verifiedUser = await jwt.verify(token, process.env.JWT_SECRET);
+
+    // console.log(verifiedUser)
+    const video = await Video.findOne({ videoId: req.params.videoId });
+    if (verifiedUser._id == video.user_id) {
+      await cloudinary.uploader.destroy(video.thumbnailId);
+      await cloudinary.uploader.destroy(video.videoId);
+      await video.deleteOne({ videoId: req.params.videoId });
+      res.status(200).json({
+        message: "Video deleted successfully",
+      });
+    } else {
+      res.status(401).json({
+        message: "Unauthorized user",
+      });
+    }
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//like video =======================================================>
+router.put("/like/:videoId", checkAuth, async (req, res) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const verifiedUser = await jwt.verify(token, process.env.JWT_SECRET);
+    const video = await Video.findOne({ videoId: req.params.videoId });
+
+    if (video.likedBy.includes(verifiedUser._id)) {
+      return res.status(500).json({
+        error: "Already Liked",
+      });
+    }
+    if (video.dislikedBy.includes(verifiedUser._id)) {
+      video.dislikes -= 1;
+      // video.dislikedBy.remove(verifiedUser._id);
+      video.dislikedBy = video.dislikedBy.filter(
+        (userId) => userId.toString() != verifiedUser._id
+      );
+    }
+    video.likes += 1;
+    video.likedBy.push(verifiedUser._id);
+    await video.save();
+    res.status(200).json({
+      message: "Video liked successfully",
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
+//dislike video =======================================================>
+router.put("/dislike/:videoId", checkAuth, async (req, res) => {
+  try {
+    const token = req.headers.authorization.split(" ")[1];
+    const verifiedUser = await jwt.verify(token, process.env.JWT_SECRET);
+    const video = await Video.findOne({ videoId: req.params.videoId });
+
+    if (video.dislikedBy.includes(verifiedUser._id)) {
+      return res.status(500).json({
+        error: "Already Disliked",
+      });
+    }
+
+    if (video.likedBy.includes(verifiedUser._id)) {
+      video.likes -= 1;
+      // video.dislikedBy.remove(verifiedUser._id);
+      video.likedBy = video.likedBy.filter(
+        (userId) => userId.toString() != verifiedUser._id
+      );
+    }
+    video.dislikes += 1;
+    video.dislikedBy.push(verifiedUser._id);
+    await video.save();
+    res.status(200).json({
+      message: "Video disliked successfully",
+    });
+  } catch (err) {
+    console.log(err);
+  }
+});
+
 module.exports = router;

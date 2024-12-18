@@ -17,7 +17,7 @@ cloudinary.config({
 Router.post("/signup", async (req, res) => {
   try {
     const existingUser = await User.findOne({ email: req.body.email });
-    if (User.length > 0) {
+    if (existingUser) {
       return res.status(400).json({
         message: "User already exists",
       });

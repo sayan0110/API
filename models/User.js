@@ -31,6 +31,7 @@ const userSchema = new mongoose.Schema(
       type: Number,
       default: 0,
     },
+    subscribedBy: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
     subscribedChannels: [{ type: mongoose.Schema.Types.ObjectId, ref: "User" }],
   },
   { timestamps: true }
